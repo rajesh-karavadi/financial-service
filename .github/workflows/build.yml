@@ -1,0 +1,37 @@
+name: Build Application
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Build Maven Project
+        run: mvn clean install
+
+      - name: Set image name
+        run: echo "IMAGE_URL=rajeshkrvd/financial-service:${{ github.sha }}" >> $GITHUB_ENV
+
+      - name: Login to Docker Hub
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login           -u "${{ secrets.DOCKERHUB_USERNAME }}"           --password-stdin
+
+      - name: Build Docker Image
+        run: docker build -t $IMAGE_URL .
+
+      - name: Push Docker Image
+        run: docker push $IMAGE_URL
